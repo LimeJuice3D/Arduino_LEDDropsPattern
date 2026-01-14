@@ -1,6 +1,5 @@
 #include <FastLED.h>
 #include <math.h>
-#include <stdio.h>
 
 #define NUM_LEDS 50
 #define LED_PIN 4
