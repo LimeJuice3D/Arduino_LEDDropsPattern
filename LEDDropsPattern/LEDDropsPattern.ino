@@ -6,15 +6,15 @@
 
 #define FALLOFF 1
 #define LERP_SPEED 0.05
-#define BRIGHTNESS 50
-#define NEIGHBOUR_LERP_THRESHOLD 30
-#define NEIGHBOUR_LERP_SPEED 0.5
-#define BASE_COLOUR 0xde4710
+#define BRIGHTNESS 255
+#define NEIGHBOUR_LERP_THRESHOLD 15
+#define NEIGHBOUR_LERP_SPEED 0.1
+#define BASE_COLOUR 0xf77c3e
 
-#define SPAWN_DELAY_MIN 800
-#define SPAWN_DELAY_MAX 1200
+#define SPAWN_DELAY_MIN 500
+#define SPAWN_DELAY_MAX 700
 #define DIM_DELAY_MIN 20
-#define DIM_DELAY_MAX 30
+#define DIM_DELAY_MAX 20
 #define CYCLE_DELAY_MIN 40
 #define CYCLE_DELAY_MAX 60
 
@@ -24,6 +24,10 @@ CRGB vleds[NUM_LEDS]; // target virtual LED board which the real LEDs interpolat
 unsigned long prev_spawn_mills = 0;
 unsigned long prev_dim_mills = 0;
 unsigned long prev_cycle_mills = 0;
+
+long spawn_delay = random(SPAWN_DELAY_MIN, SPAWN_DELAY_MAX);
+long dim_delay = random(DIM_DELAY_MIN, DIM_DELAY_MAX);
+long cycle_delay = random(CYCLE_DELAY_MIN, CYCLE_DELAY_MAX);
 
 struct influence {
   int dist;
@@ -41,13 +45,11 @@ void setup() {
 
 void loop() {
 
-  long spawn_delay = random(SPAWN_DELAY_MIN, SPAWN_DELAY_MAX);
-  long dim_delay = random(DIM_DELAY_MIN, DIM_DELAY_MAX);
-  long cycle_delay = random(CYCLE_DELAY_MIN, CYCLE_DELAY_MAX);
-
   unsigned long curr_mills = millis();
 
+  // update LED values 
   if (curr_mills - prev_cycle_mills >= cycle_delay) {
+    cycle_delay = random(CYCLE_DELAY_MIN, CYCLE_DELAY_MAX);
     prev_cycle_mills = curr_mills;
 
     for (int i = 0; i < NUM_LEDS; i++) {
@@ -58,7 +60,9 @@ void loop() {
     }
   }
 
+  // dim both real LEDs and virtual LEDs at a variable rate
   if (curr_mills - prev_dim_mills >= dim_delay) {
+    dim_delay = random(DIM_DELAY_MIN, DIM_DELAY_MAX);
     prev_dim_mills = curr_mills;
 
     for (int i = 0; i < NUM_LEDS; i++) {
@@ -67,8 +71,9 @@ void loop() {
     }
   }
 
-  // Every so often, a random LED changes to a random colour
+  // Every so often, a random vLED changes to a random colour
   if (curr_mills - prev_spawn_mills >= spawn_delay) {
+    spawn_delay = random(SPAWN_DELAY_MIN, SPAWN_DELAY_MAX);
     prev_spawn_mills = curr_mills;
     vleds[random(0, NUM_LEDS)] = BASE_COLOUR;
   }
@@ -112,9 +117,9 @@ void update_led(struct influence arr[], int arr_size, int pos) {
   avg.b = b_avg / total_strength;
 
   // find linear interpolation between current colour and target colour
-  leds[pos].r += floor((avg.r - leds[pos].r) * LERP_SPEED * total_strength);
-  leds[pos].g += floor((avg.g - leds[pos].g) * LERP_SPEED * total_strength);
-  leds[pos].b += floor((avg.b - leds[pos].b) * LERP_SPEED * total_strength);
+  leds[pos].r += ceil((avg.r - leds[pos].r) * LERP_SPEED * total_strength);
+  leds[pos].g += ceil((avg.g - leds[pos].g) * LERP_SPEED * total_strength);
+  leds[pos].b += ceil((avg.b - leds[pos].b) * LERP_SPEED * total_strength);
 
   // find the strongest neighbour and lerp to it
   CRGB for_neighbour = 0;
@@ -145,9 +150,9 @@ void update_led(struct influence arr[], int arr_size, int pos) {
 
   // lerp to strongest neighbour if the difference between current and neighbour exceeds the neighbour lerp threshold
   if (strongest_val - curr_val > NEIGHBOUR_LERP_THRESHOLD) {
-    leds[pos].r += floor((strongest_neighbour.r - leds[pos].r) * NEIGHBOUR_LERP_SPEED);
-    leds[pos].g += floor((strongest_neighbour.g - leds[pos].g) * NEIGHBOUR_LERP_SPEED);
-    leds[pos].b += floor((strongest_neighbour.b - leds[pos].b) * NEIGHBOUR_LERP_SPEED);
+    leds[pos].r += ceil((strongest_neighbour.r - leds[pos].r) * NEIGHBOUR_LERP_SPEED);
+    leds[pos].g += ceil((strongest_neighbour.g - leds[pos].g) * NEIGHBOUR_LERP_SPEED);
+    leds[pos].b += ceil((strongest_neighbour.b - leds[pos].b) * NEIGHBOUR_LERP_SPEED);
   }
 
   return;
